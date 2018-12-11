@@ -1,3 +1,10 @@
+/**
+ * File              : include/shot.h
+ * Author            : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ * Date              : 17.10.2018
+ * Last Modified Date: 17.10.2018
+ * Last Modified By  : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ */
 /*
 	Copyright (C) 2010 Samuele Salti, Federico Tombari, all rights reserved.
 
@@ -140,6 +147,7 @@ private:
 	int m_minNeigh;
 	double m_radius;
 	int m_requestedNumFeat;
+    bool m_brand;
 
 	Feature3D* m_feat;
 	int m_numFeat;

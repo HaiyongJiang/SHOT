@@ -1,3 +1,10 @@
+/**
+ * File              : src/shot.cpp
+ * Author            : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ * Date              : 17.10.2018
+ * Last Modified Date: 11.12.2018
+ * Last Modified By  : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ */
 /*
 	Copyright (C) 2010 Samuele Salti, Federico Tombari, all rights reserved.
 
@@ -50,7 +57,7 @@ Random3DDetector::Random3DDetector(int nPoints, bool random, double radius,  int
 	m_minNeigh = minNeigh;
 	m_radius = radius;
 	m_borderDistance = borderDistance; 
-
+    m_brand = random;
 	
 	if(random)
 		srand(randreseed());
@@ -97,10 +104,12 @@ int Random3DDetector::extract(vtkPolyData* cloud, Feature3D* & feat)
 	
 	while ( extractedPoints < numFeatures){
 
-
-		numFeatures = Min(m_requestedNumFeat, detectablePointsLeft);
-		
-		randomNum = randrange (n_cloud_points);
+        if(m_brand){
+		    numFeatures = Min(m_requestedNumFeat, detectablePointsLeft);
+            randomNum = randrange (n_cloud_points);
+        }
+        else
+            randomNum = extractedPoints;
 		
 		cloud->GetPoint(randomNum, point);
 
@@ -109,37 +118,39 @@ int Random3DDetector::extract(vtkPolyData* cloud, Feature3D* & feat)
 		ids.insert(randomNum);
 
 
-		//Check the minimum number of neighbors (if radius != borderDistance)
-		if(m_radius > 0.0 && m_radius != m_borderDistance){
-				
-			NNpoints = index.findPointsWithinRadius(point, m_radius);
-			int nNeighbors = NNpoints->GetNumberOfIds();
-			
-			if( nNeighbors-1 < m_minNeigh){
-				detectablePointsLeft--;
-				continue;
-			}
-		}
+        if(m_brand){
+            //Check the minimum number of neighbors (if radius != borderDistance)
+            if(m_radius > 0.0 && m_radius != m_borderDistance){
+                    
+                NNpoints = index.findPointsWithinRadius(point, m_radius);
+                int nNeighbors = NNpoints->GetNumberOfIds();
+                
+                if( nNeighbors-1 < m_minNeigh){
+                    detectablePointsLeft--;
+                    continue;
+                }
+            }
 
-		//Check if the point is not too close to the border
-		if(m_borderDistance > 0.0){
-			
-			NNpoints = index.findPointsWithinRadius(point, m_borderDistance);
-			int nNeighbors = NNpoints->GetNumberOfIds();
+            //Check if the point is not too close to the border
+            if(m_borderDistance > 0.0){
+                
+                NNpoints = index.findPointsWithinRadius(point, m_borderDistance);
+                int nNeighbors = NNpoints->GetNumberOfIds();
 
-			for(int j=0; j<nNeighbors; j++){
-				if( edgePointList[ NNpoints->GetId(j) ]){
-					detectablePointsLeft--;
-					continue;
-				}
-			}
+                for(int j=0; j<nNeighbors; j++){
+                    if( edgePointList[ NNpoints->GetId(j) ]){
+                        detectablePointsLeft--;
+                        continue;
+                    }
+                }
 
-			//Check the minimum number of neighbors (if radius = borderDistance)
-			if( nNeighbors < m_minNeigh && m_radius == m_borderDistance){
-				detectablePointsLeft--;
-				continue;
-			}
-		}
+                //Check the minimum number of neighbors (if radius = borderDistance)
+                if( nNeighbors < m_minNeigh && m_radius == m_borderDistance){
+                    detectablePointsLeft--;
+                    continue;
+                }
+            }
+        }
 
 		
 		m_feat[extractedPoints].x = point[0];
@@ -635,13 +646,13 @@ void SHOTDescriptor::interpolateSingleChannel(vtkPolyData* cloud, vtkIdList* NNp
 			zInFeatRef  = 0;
 
 
-
-		unsigned char bit4 = ((yInFeatRef > 0) || ((yInFeatRef == 0.0) && (xInFeatRef < 0))) ? 1 : 0;
-		unsigned char bit3 = ((xInFeatRef > 0) || ((xInFeatRef == 0.0) && (yInFeatRef > 0))) ? !bit4 : bit4;
+        double eps = 1e-8;
+		unsigned char bit4 = ((yInFeatRef > 0) || ((abs(yInFeatRef)<eps) && (xInFeatRef < 0))) ? 1 : 0;
+		unsigned char bit3 = ((xInFeatRef > 0) || ((abs(xInFeatRef)<eps) && (yInFeatRef > 0))) ? !bit4 : bit4;
 
 		assert(bit3 == 0 || bit3 == 1);
 
-		int desc_index = (bit4<<3) + (bit3<<2);
+		long long desc_index = (bit4<<3) + (bit3<<2);
 
 		desc_index = desc_index << 1;
 
@@ -655,8 +666,8 @@ void SHOTDescriptor::interpolateSingleChannel(vtkPolyData* cloud, vtkIdList* NNp
 		// 2 RADII
 		desc_index += (distance > m_radius1_2) ? 2 : 0;
 
-		int step_index = static_cast<int>(floor( binDistance[i_idx] +0.5 ));
-		int volume_index = desc_index * (nr_bins+1);	
+		long long step_index = static_cast<int>(floor( binDistance[i_idx] +0.5 ));
+		long long volume_index = desc_index * (nr_bins+1);	
 
 		//Interpolation on the cosine (adjacent bins in the histogram)
 		binDistance[i_idx] -= step_index;  
@@ -721,6 +732,13 @@ void SHOTDescriptor::interpolateSingleChannel(vtkPolyData* cloud, vtkIdList* NNp
 				intWeight += 1 + inclinationDistance;
 			else{
 				intWeight += 1 - inclinationDistance;
+				if( (desc_index - 1) * (nr_bins+1) + step_index >= 0 && (desc_index - 1) * (nr_bins+1) + step_index < m_descLength)
+                {}
+                else{
+                    printf("data: %d, %d, %d\n",(desc_index - 1) * (nr_bins+1) + step_index, (desc_index - 1) * (nr_bins+1) + step_index, m_descLength);
+                    printf("details: %d, %d, %d\n",(desc_index - 1), (nr_bins+1), step_index);
+                    printf("info: %d, %d, %d\n", desc_index, bit4, bit3);
+                }
 				assert( (desc_index - 1) * (nr_bins+1) + step_index >= 0 && (desc_index - 1) * (nr_bins+1) + step_index < m_descLength);
 				shot[ (desc_index - 1) * (nr_bins+1) + step_index] += inclinationDistance;
 			}
@@ -731,7 +749,7 @@ void SHOTDescriptor::interpolateSingleChannel(vtkPolyData* cloud, vtkIdList* NNp
 			//Interpolation on the azimuth (adjacent horizontal volumes)
 			double azimuth = atan2( yInFeatRef, xInFeatRef );
 
-			int sel = desc_index >> 2;
+			long long sel = desc_index >> 2;
 			double angularSectorSpan = DEG_45_TO_RAD;
 			double angularSectorStart = -DEG_168_TO_RAD;
 
@@ -743,12 +761,12 @@ void SHOTDescriptor::interpolateSingleChannel(vtkPolyData* cloud, vtkIdList* NNp
 
 			if(azimuthDistance > 0){
 				intWeight += 1 - azimuthDistance;
-				int interp_index = (desc_index + 4) % m_maxAngularSectors;
+				long long interp_index = (desc_index + 4) % m_maxAngularSectors;
 				assert( interp_index * (nr_bins+1) + step_index >= 0 && interp_index * (nr_bins+1) + step_index < m_descLength);
 				shot[ interp_index * (nr_bins+1) + step_index] += azimuthDistance;
 			}
 			else{
-				int interp_index = (desc_index - 4 + m_maxAngularSectors) % m_maxAngularSectors;
+				long long interp_index = (desc_index - 4 + m_maxAngularSectors) % m_maxAngularSectors;
 				assert( interp_index * (nr_bins+1) + step_index >= 0 && interp_index * (nr_bins+1) + step_index < m_descLength);
 				intWeight += 1 + azimuthDistance;
 				shot[ interp_index * (nr_bins+1) + step_index] -= azimuthDistance;

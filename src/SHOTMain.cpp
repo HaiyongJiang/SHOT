@@ -1,3 +1,10 @@
+/**
+ * File              : src/SHOTMain.cpp
+ * Author            : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ * Date              : 17.10.2018
+ * Last Modified Date: 10.12.2018
+ * Last Modified By  : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ */
 /*
 	Copyright (C) 2010 Samuele Salti, Federico Tombari, all rights reserved.
 
@@ -193,8 +200,7 @@ int main(int argc, char** argv)
 		double meshRes = computeMeshResolution(mesh);
 
 		// Select feature points;
-		Random3DDetector detector(params.nFeat, true, meshRes * params.radiusMR, params.minNeighbors);
-
+		Random3DDetector detector(params.nFeat, false, meshRes * params.radiusMR, params.minNeighbors);
 		Feature3D* feat;
 		
 		int nActualFeat = detector.extract(mesh, feat);
@@ -218,6 +224,7 @@ int main(int argc, char** argv)
 		if (!outfile.is_open())
 			std::cout << "\nWARNING\n It is not possible to write on the requested output file\n";
 
+        printf("feat#%d, desc#%d", params.nFeat, descriptor.getDescriptorLength());
 		cv::Mat features(params.nFeat, descriptor.getDescriptorLength(), CV_32FC1);
 		for (int i = 0; i < nActualFeat; i++)
 		{
@@ -233,47 +240,52 @@ int main(int argc, char** argv)
 			if (outfile.is_open())
 					outfile << "\n ";
 		}
+        if(params.outputFile.size()>0) {
+            printf("Save results to %s.bin",params.outputFile.c_str());
+		    std::ofstream outfile(params.outputFile + ".bin", std::ios::out | std::ios::binary);
+            outfile.write((char*)features.data, sizeof(float)*params.nFeat*descriptor.getDescriptorLength());
+        }
 
-		double noiseSigma = params.sigmaNoiseMR * meshRes;
-		rotate(mesh, params.rotationAngle, params.rotationAxis);
-		addGaussianNoise(mesh, noiseSigma);
-		computeNormals(mesh);
-
-		// Add noise
-		double** noisyDesc;
-		descriptor.describe(mesh, feat, noisyDesc, nActualFeat);
-
-
-		cv::flann::Index kdtree(features, cv::flann::KDTreeIndexParams());
-		std::vector<float> dists;
-		dists.resize(2);
-		std::vector<int> knn;
-		knn.resize(2);
-		int correctMatch = 0, totalMatch = 0;
-
-		for(int i = 0; i < nActualFeat; i++)
-		{
-			std::vector<float> query;
-			for (int j = 0; j < descriptor.getDescriptorLength(); j++)
-				query.push_back(noisyDesc[i][j]);
-
-			kdtree.knnSearch(query, knn, dists, 2, cv::flann::SearchParams());
-
-			assert(dists[0] <= dists[1]);
-
-			if (dists[0] <= params.matchTh * params.matchTh * dists[1])
-			{
-				printf("Match %d: %d\n", i, knn[0]);
-				if (i == knn[0])
-					correctMatch++;
-
-				totalMatch++;
-			}
-		}
-		printf("\n\nDescribed keypoints: %d. \nCorrect Matches: %d out of %d. \nMatches under threshold: %d. \nRecall: %f, 1-Precision: %f\n", 
-			nActualFeat, correctMatch, totalMatch, nActualFeat - totalMatch, correctMatch*1.0/nActualFeat, (totalMatch - correctMatch)*1.0/totalMatch);
+   /*      double noiseSigma = params.sigmaNoiseMR * meshRes; */
+		// rotate(mesh, params.rotationAngle, params.rotationAxis);
+		// addGaussianNoise(mesh, noiseSigma);
+		// computeNormals(mesh);
+        //
+		// // Add noise
+		// double** noisyDesc;
+		// descriptor.describe(mesh, feat, noisyDesc, nActualFeat);
+        //
+        //
+		// cv::flann::Index kdtree(features, cv::flann::KDTreeIndexParams());
+		// std::vector<float> dists;
+		// dists.resize(2);
+		// std::vector<int> knn;
+		// knn.resize(2);
+		// int correctMatch = 0, totalMatch = 0;
+        //
+		// for(int i = 0; i < nActualFeat; i++)
+		// {
+		//     std::vector<float> query;
+		//     for (int j = 0; j < descriptor.getDescriptorLength(); j++)
+		//         query.push_back(noisyDesc[i][j]);
+        //
+		//     kdtree.knnSearch(query, knn, dists, 2, cv::flann::SearchParams());
+        //
+		//     assert(dists[0] <= dists[1]);
+        //
+		//     if (dists[0] <= params.matchTh * params.matchTh * dists[1])
+		//     {
+		//         // printf("Match %d: %d\n", i, knn[0]);
+		//         if (i == knn[0])
+		//             correctMatch++;
+        //
+		//         totalMatch++;
+		//     }
+		// }
+		// printf("\n\nDescribed keypoints: %d. \nCorrect Matches: %d out of %d. \nMatches under threshold: %d. \nRecall: %f, 1-Precision: %f\n",
+			/* nActualFeat, correctMatch, totalMatch, nActualFeat - totalMatch, correctMatch*1.0/nActualFeat, (totalMatch - correctMatch)*1.0/totalMatch); */
 		mesh->Delete();
 	}
 
-	getchar();
+	// getchar();
 }
