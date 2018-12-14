@@ -2,7 +2,7 @@
  * File              : src/SHOTMain.cpp
  * Author            : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
  * Date              : 17.10.2018
- * Last Modified Date: 10.12.2018
+ * Last Modified Date: 14.12.2018
  * Last Modified By  : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
  */
 /*
@@ -193,7 +193,9 @@ int main(int argc, char** argv)
 
 
 	vtkPolyData* mesh = LoadPolyData(params.datapath);
-	cleanPolyData(mesh);
+    printf("num vertices: %d", mesh->GetNumberOfPoints());
+	// cleanPolyData(mesh);
+    // printf("clearning, num vertices: %d", mesh->GetNumberOfPoints());
 
     if (mesh->GetNumberOfPoints())
 	{
@@ -215,9 +217,11 @@ int main(int argc, char** argv)
 		shotParams.describeShape = params.describeShape;
 		shotParams.nThreads = params.nThreads;
 
+        std::cout << "construct descriptor.\n";
 		SHOTDescriptor descriptor(shotParams);
 
 		double** desc;
+        std::cout << "start describe mesh.\n";
 		descriptor.describe(mesh, feat, desc, nActualFeat);
 
 		std::ofstream outfile(params.outputFile.c_str());

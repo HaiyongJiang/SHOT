@@ -1,3 +1,10 @@
+/**
+ * File              : src/utils.cpp
+ * Author            : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ * Date              : 13.12.2018
+ * Last Modified Date: 14.12.2018
+ * Last Modified By  : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
+ */
 /*
 	Copyright (C) 2010 Samuele Salti, Federico Tombari, all rights reserved.
 
@@ -211,6 +218,13 @@ double computeMeshResolution(vtkPolyData* cloud)
 	{
 		meshResolution/=numdistances;
 	}
+
+    // set a high value for point clouds, maybe it's better to calcualte a basic point-wise distance
+    if(meshResolution<0.001)
+    {
+        printf("set resolution to 0.01\n");
+        meshResolution = 0.005;
+    }
 
 	return meshResolution;
 }

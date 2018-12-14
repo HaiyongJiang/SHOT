@@ -17,6 +17,9 @@ Datasets used in the experiments reported in the papers are available at the SHO
 * Samuele Salti [samuele.salti@unibo.it](mailto:samuele.salti@unibo.it)
 * Federico Tombari [federico.tombari@unibo.it](mailto:federico.tombari@unibo.it)
 
+# Notices
+SHOT can process both mesh data and point clouds data, but it requires the input of both point coordinates and normals.
+
 	
 # License
 SHOT is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

@@ -2,7 +2,7 @@
  * File              : src/shot.cpp
  * Author            : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
  * Date              : 17.10.2018
- * Last Modified Date: 11.12.2018
+ * Last Modified Date: 14.12.2018
  * Last Modified By  : Hai-Yong Jiang <haiyong.jiang1990@hotmail.com>
  */
 /*
@@ -1019,7 +1019,7 @@ void SHOTDescriptor::computeDesc (SHOTParams params, vtkPolyData *cloud, Feature
 
 		if (nNeighbors <  m_params.minNeighbors)
 		{
-			printf("Warning! Neighborhood has less than 5 vertexes. Aborting description of feature point %d, index %d\n", i, feat[i].index);
+			printf("DESC Warning! Neighborhood has less than 5 vertexes. Aborting description of feature point %d, index %d\n", i, feat[i].index);
 			continue;
 		}
 
@@ -1043,23 +1043,25 @@ void SHOTDescriptor::computeDesc (SHOTParams params, vtkPolyData *cloud, Feature
 		{
 			binDistanceShape.resize(nNeighbors);
 		
-			float* normalArray =  (float*)cloud->GetPointData()->GetNormals()->GetVoidPointer(0);
-			
-			for(int j=0; j<nNeighbors; j++){
+            if(!cloud->GetPointData()->GetNormals())
+                std::cout << "no normals is found: \n";
+            float* normalArray =  (float*)cloud->GetPointData()->GetNormals()->GetVoidPointer(0);
+            
+            for(int j=0; j<nNeighbors; j++){
 
-				if (areEquals(distances[j], 0.0))
-					continue;
+                if (areEquals(distances[j], 0.0))
+                    continue;
 
-				int id = NNpoints->GetId(j) * 3;
-			
-				double cosineDesc = feat[i].rf[6]*normalArray[id ] + feat[i].rf[7]*normalArray[id+1] + feat[i].rf[8]*normalArray[id+2];
+                int id = NNpoints->GetId(j) * 3;
+            
+                double cosineDesc = feat[i].rf[6]*normalArray[id ] + feat[i].rf[7]*normalArray[id+1] + feat[i].rf[8]*normalArray[id+2];
 
-				if (cosineDesc > 1.0) cosineDesc = 1.0;
-				if (cosineDesc < -1.0) cosineDesc = -1.0;
-	
-				binDistanceShape[j] = ((1.0 + cosineDesc) * params.shapeBins) / 2;
-			}
-		}
+                if (cosineDesc > 1.0) cosineDesc = 1.0;
+                if (cosineDesc < -1.0) cosineDesc = -1.0;
+
+                binDistanceShape[j] = ((1.0 + cosineDesc) * params.shapeBins) / 2;
+            }
+        }
 
 		//Color Description
 		if (params.describeColor)
